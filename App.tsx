@@ -12,6 +12,7 @@ import { NavigationRail } from './components/NavigationRail';
 import type { AcknowledgementRecord, AppStatus, AIFlaggedRecord, ContactSheetStatus, ImageAnalysisResult, ExtractedImage, AIAnalysisStatus } from './types';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
 import saveAs from "file-saver";
+import { EditIcon } from './components/icons/EditIcon';
 
 
 const cleanAcknowledgement = (ack: string, source: string): string => {
@@ -129,7 +130,7 @@ const App: React.FC = () => {
   const [isDownloadingSorted, setIsDownloadingSorted] = useState(false);
 
   // UI State
-  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(true);
+  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
 
 
   const handleReset = () => {
@@ -497,7 +498,7 @@ const App: React.FC = () => {
                   heading: HeadingLevel.HEADING_2,
               }));
               paragraphs.push(new Paragraph({
-                  children: [new TextRun("The AI analysis flagged the following entries as potential errors or anomalies. Please review them carefully:")]
+                  children: [new TextRun("The AI analysis flagged the following entries as potential errors. Please review them carefully:")]
               }));
               aiFlags.forEach(flag => {
                   paragraphs.push(new Paragraph({
@@ -691,6 +692,15 @@ const App: React.FC = () => {
             <div className="flex-grow bg-white rounded-xl shadow-lg p-2 sm:p-3 flex gap-6 transition-all duration-300">
               <NavigationRail />
               <div className="flex-grow min-w-0">
+                <div className="flex justify-end items-center mb-2 px-2">
+                    <button
+                        onClick={handleEditOriginal}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-white text-slate-600 font-semibold rounded-lg border border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors text-sm shadow-sm"
+                    >
+                        <EditIcon className="w-4 h-4" />
+                        <span>Edit Original Log</span>
+                    </button>
+                </div>
                 <ResultsTable 
                   coverData={coverData}
                   nonCoverData={nonCoverData}
@@ -717,7 +727,6 @@ const App: React.FC = () => {
               aiFlags={aiFlags}
               removedDuplicates={removedDuplicates}
               crossCategoryDuplicates={crossCategoryDuplicates}
-              onEditOriginal={handleEditOriginal}
             />
           </div>
         );

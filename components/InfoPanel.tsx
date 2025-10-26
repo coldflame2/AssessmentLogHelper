@@ -1,10 +1,9 @@
 import React from 'react';
 import type { AcknowledgementRecord, AIFlaggedRecord, AIAnalysisStatus } from '../types';
-import { InfoIcon } from './icons/InfoIcon';
+import { DetailsIcon } from './icons/DetailsIcon';
 import { ChevronRightIcon } from './icons/ChevronRightIcon';
 import { ErrorIcon } from './icons/ErrorIcon';
 import { SuccessIcon } from './icons/SuccessIcon';
-import { EditIcon } from './icons/EditIcon';
 
 
 interface InfoPanelProps {
@@ -19,7 +18,6 @@ interface InfoPanelProps {
     aiFlags: AIFlaggedRecord[];
     removedDuplicates: AcknowledgementRecord[];
     crossCategoryDuplicates: AcknowledgementRecord[];
-    onEditOriginal: () => void;
 }
 
 export const InfoPanel: React.FC<InfoPanelProps> = ({
@@ -34,7 +32,6 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
     aiFlags,
     removedDuplicates,
     crossCategoryDuplicates,
-    onEditOriginal,
 }) => {
 
     const renderAiFlagsContent = (flags: AIFlaggedRecord[]) => (
@@ -107,14 +104,15 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
                         className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
                         aria-label={isOpen ? "Collapse panel" : "Expand panel"}
                     >
-                        <ChevronRightIcon className={`w-5 h-5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                        <ChevronRightIcon className={`w-5 h-5 transition-transform duration-300 ${isOpen ? 'rotate-0' : 'rotate-180'} transform`} />
+
                     </button>
                 </div>
 
                 <div className="p-6 h-full overflow-y-auto">
                     <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 pr-8">
-                        <InfoIcon className="w-6 h-6 text-blue-600" />
-                        <span>Information</span>
+                        <DetailsIcon className="w-6 h-6 text-blue-600" />
+                        <span>Details</span>
                     </h2>
 
                     <div className="mt-6 space-y-6">
@@ -123,15 +121,6 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
                              <h3 className="text-lg font-semibold text-slate-700 mb-3 border-b pb-2">Process Results</h3>
                              <div className="text-sm space-y-1 text-slate-600">
                                 <p><strong>File:</strong> <span className="font-medium text-slate-800 break-all">{fileName}</span></p>
-                             </div>
-                             <div className="mt-4">
-                                <button 
-                                    onClick={onEditOriginal}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg shadow-sm hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-colors"
-                                >
-                                    <EditIcon className="w-5 h-5" />
-                                    <span>Edit Original Log</span>
-                                </button>
                              </div>
                         </section>
 
