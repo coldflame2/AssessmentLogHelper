@@ -1,5 +1,5 @@
 {
-  "name": "Credits_Helper",
+  "name": "AssessmentLogHelper",
   "description": "An application to read an Excel file, find 'source' and 'acknowledgement' columns, and display the data grouped and sorted alphabetically by source, then by acknowledgement.",
   "requestFramePermissions": []
 }
