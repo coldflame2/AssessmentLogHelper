@@ -8,6 +8,7 @@ import { ErrorIcon } from './components/icons/ErrorIcon';
 import { ActionsHeader } from './components/ActionsHeader';
 import { DropdownMenu } from './components/DropdownMenu';
 import { InfoPanel } from './components/InfoPanel';
+import { NavigationRail } from './components/NavigationRail';
 import type { AcknowledgementRecord, AppStatus, AIFlaggedRecord, ContactSheetStatus, ImageAnalysisResult, ExtractedImage, AIAnalysisStatus } from './types';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
 import saveAs from "file-saver";
@@ -660,6 +661,11 @@ const App: React.FC = () => {
       }
   };
 
+  const handleEditOriginal = () => {
+    // This is a placeholder for the editing functionality.
+    console.log("Edit Original Log clicked. Feature to be implemented.");
+  };
+
   const totalSources = new Set([...coverData.map(d => d.source), ...nonCoverData.map(d => d.source)]).size;
 
   const renderContent = () => {
@@ -682,26 +688,27 @@ const App: React.FC = () => {
       case 'success':
         return (
           <div className="flex gap-6">
-            <div className="flex-grow bg-white rounded-xl shadow-lg p-4 sm:p-8 transition-all duration-300">
-              <ResultsTable 
-                coverData={coverData}
-                nonCoverData={nonCoverData}
-                onProcessContactSheet={handleProcessContactSheet}
-                onProcessDirectImages={handleProcessDirectImages}
-                onResetContactSheet={handleContactSheetReset}
-                contactSheetStatus={contactSheetStatus}
-                imageAnalysisResults={imageAnalysisResults}
-                contactSheetError={contactSheetError}
-                processingProgress={processingProgress}
-                onRetryFailedImages={handleRetryFailedImages}
-              />
+            <div className="flex-grow bg-white rounded-xl shadow-lg p-2 sm:p-3 flex gap-6 transition-all duration-300">
+              <NavigationRail />
+              <div className="flex-grow min-w-0">
+                <ResultsTable 
+                  coverData={coverData}
+                  nonCoverData={nonCoverData}
+                  onProcessContactSheet={handleProcessContactSheet}
+                  onProcessDirectImages={handleProcessDirectImages}
+                  onResetContactSheet={handleContactSheetReset}
+                  contactSheetStatus={contactSheetStatus}
+                  imageAnalysisResults={imageAnalysisResults}
+                  contactSheetError={contactSheetError}
+                  processingProgress={processingProgress}
+                  onRetryFailedImages={handleRetryFailedImages}
+                />
+              </div>
             </div>
             <InfoPanel 
               isOpen={isInfoPanelOpen}
               onToggle={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
               fileName={fileName}
-              title={title}
-              isbn={isbn}
               originalRecordCount={originalRecordCount}
               totalSources={totalSources}
               coverCreditsCount={coverData.length}
@@ -710,6 +717,7 @@ const App: React.FC = () => {
               aiFlags={aiFlags}
               removedDuplicates={removedDuplicates}
               crossCategoryDuplicates={crossCategoryDuplicates}
+              onEditOriginal={handleEditOriginal}
             />
           </div>
         );
@@ -738,28 +746,40 @@ const App: React.FC = () => {
   ];
 
   return (
-    <main className="container mx-auto p-4 sm:p-8">
-      <header className="mb-8 flex justify-between items-center">
+    <main className="container mx-auto p-4 sm:p-6">
+      <header className="mb-4 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <DropdownMenu items={menuItems} />
           <div className="text-left">
-            <h1 className="text-4xl font-bold text-slate-800">Credits Helper</h1>
-            <p className="text-slate-500 mt-2">Create final credit log from assessment log</p>
+            <h1 className="text-3xl font-bold text-slate-800">Credits Helper</h1>
+            <p className="text-slate-500">Create final credit log from assessment log</p>
           </div>
         </div>
         {status === 'success' && (
-          <ActionsHeader 
-            isMerging={isMerging}
-            isDownloading={isDownloading}
-            isDownloadingSorted={isDownloadingSorted}
-            copyStatus={copyStatus}
-            contactSheetStatus={contactSheetStatus}
-            imageAnalysisResults={imageAnalysisResults}
-            onMergeAndDownload={handleMergeAndDownload}
-            onDownloadWord={handleDownloadWord}
-            onDownloadSortedOriginal={handleDownloadSortedOriginal}
-            onCopy={handleCopy}
-          />
+          <div className="flex items-center gap-6">
+            <div className="text-right min-w-0">
+              {isbn && title && (
+                <p
+                  className="text-lg font-semibold text-slate-800 truncate max-w-lg"
+                  title={`${isbn}_${title}`}
+                >
+                  {`${isbn}_${title}`}
+                </p>
+              )}
+            </div>
+            <ActionsHeader 
+              isMerging={isMerging}
+              isDownloading={isDownloading}
+              isDownloadingSorted={isDownloadingSorted}
+              copyStatus={copyStatus}
+              contactSheetStatus={contactSheetStatus}
+              imageAnalysisResults={imageAnalysisResults}
+              onMergeAndDownload={handleMergeAndDownload}
+              onDownloadWord={handleDownloadWord}
+              onDownloadSortedOriginal={handleDownloadSortedOriginal}
+              onCopy={handleCopy}
+            />
+          </div>
         )}
       </header>
       {renderContent()}
