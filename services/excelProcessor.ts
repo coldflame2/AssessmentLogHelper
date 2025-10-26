@@ -112,7 +112,6 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
                     records: sheetRecords,
                     isbn: metadata.isbn,
                     title: metadata.title,
-                    fullData: jsonData,
                 };
                 break; // Found and processed the correct sheet, exit loop
             } catch (error) {

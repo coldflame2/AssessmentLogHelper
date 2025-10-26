@@ -16,7 +16,6 @@ export interface ProcessedExcelData {
   records: AcknowledgementRecord[];
   isbn: string | null;
   title: string | null;
-  fullData: (string | number)[][];
 }
 
 // Types for Image Analysis Feature

@@ -104,7 +104,6 @@ const App: React.FC = () => {
   const [title, setTitle] = useState<string | null>(null);
   const [originalRecordCount, setOriginalRecordCount] = useState<number>(0);
   const [originalRecords, setOriginalRecords] = useState<AcknowledgementRecord[]>([]);
-  const [fullOriginalData, setFullOriginalData] = useState<(string | number)[][]>([]);
   
   const [coverData, setCoverData] = useState<AcknowledgementRecord[]>([]);
   const [nonCoverData, setNonCoverData] = useState<AcknowledgementRecord[]>([]);
@@ -146,7 +145,6 @@ const App: React.FC = () => {
     setTitle(null);
     setOriginalRecordCount(0);
     setOriginalRecords([]);
-    setFullOriginalData([]);
     setContactSheetStatus('idle');
     setImageAnalysisResults([]);
     setContactSheetError(null);
@@ -168,12 +166,10 @@ const App: React.FC = () => {
     setTitle(null);
     setOriginalRecordCount(0);
     setOriginalRecords([]);
-    setFullOriginalData([]);
 
     try {
-      const { records: allRecords, isbn: fileIsbn, title: fileTitle, fullData } = await processExcelFile(file);
+      const { records: allRecords, isbn: fileIsbn, title: fileTitle } = await processExcelFile(file);
       setOriginalRecords(allRecords);
-      setFullOriginalData(fullData);
       setIsbn(fileIsbn);
       setTitle(fileTitle);
       setOriginalRecordCount(allRecords.length);
@@ -690,7 +686,6 @@ const App: React.FC = () => {
               <ResultsTable 
                 coverData={coverData}
                 nonCoverData={nonCoverData}
-                fullOriginalData={fullOriginalData}
                 onProcessContactSheet={handleProcessContactSheet}
                 onProcessDirectImages={handleProcessDirectImages}
                 onResetContactSheet={handleContactSheetReset}
