@@ -3,6 +3,8 @@ export interface AcknowledgementRecord {
   source: string;
   acknowledgement: string;
   pageNumber: string;
+  usageClassification: string;
+  licenseFee: string;
 }
 
 export type AppStatus = 'idle' | 'processing' | 'success' | 'error';

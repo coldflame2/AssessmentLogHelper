@@ -1,9 +1,11 @@
+
 import React from 'react';
 import type { AcknowledgementRecord, AIFlaggedRecord, AIAnalysisStatus } from '../types';
 import { DetailsIcon } from './icons/DetailsIcon';
 import { ChevronRightIcon } from './icons/ChevronRightIcon';
 import { ErrorIcon } from './icons/ErrorIcon';
 import { SuccessIcon } from './icons/SuccessIcon';
+import { SparklesIcon } from './icons/SparklesIcon';
 
 
 interface InfoPanelProps {
@@ -14,10 +16,12 @@ interface InfoPanelProps {
     totalSources: number;
     coverCreditsCount: number;
     mainCreditsCount: number;
+    dataValidationFlags: AIFlaggedRecord[];
     aiAnalysisStatus: AIAnalysisStatus;
     aiFlags: AIFlaggedRecord[];
     removedDuplicates: AcknowledgementRecord[];
     crossCategoryDuplicates: AcknowledgementRecord[];
+    onRunAiAnalysis: () => void;
 }
 
 export const InfoPanel: React.FC<InfoPanelProps> = ({
@@ -28,11 +32,44 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
     totalSources,
     coverCreditsCount,
     mainCreditsCount,
+    dataValidationFlags,
     aiAnalysisStatus,
     aiFlags,
     removedDuplicates,
     crossCategoryDuplicates,
+    onRunAiAnalysis,
 }) => {
+
+    const renderDataValidationSection = () => {
+        if (dataValidationFlags.length > 0) {
+            return (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h4 className="font-semibold text-red-800 flex items-center gap-2 pr-2"><ErrorIcon className="w-5 h-5"/> Data Validation Issues Found</h4>
+                    <p className="text-red-700 mt-1">The following entries violate predefined data rules:</p>
+                    <ul className="list-disc list-inside mt-2 text-red-600 max-h-48 overflow-y-auto space-y-1">
+                        {dataValidationFlags.map((item, i) => (
+                            <li key={i}>
+                                <strong>Usage: {item.usageClassification}</strong> / <strong>Fee: {item.licenseFee || 'empty'}</strong>
+                                <br/>
+                                <em className="text-red-800 pl-2">&rarr; {item.reason}</em>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+
+        if (originalRecordCount > 0) {
+            return (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                    <SuccessIcon className="w-5 h-5 text-green-600"/>
+                    <p className="font-semibold text-green-800">Data Validation Passed. No rule violations found.</p>
+                </div>
+            );
+        }
+        
+        return null;
+    };
 
     const renderAiFlagsContent = (flags: AIFlaggedRecord[]) => (
         <>
@@ -76,10 +113,19 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
                         <p className="font-semibold text-green-800">AI Data Quality Check Complete. No issues found.</p>
                     </div>
                 );
+            case 'idle':
             case 'skipped':
                 return (
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                        <p className="font-semibold text-slate-700">AI Data Quality Check was skipped.</p>
+                        <h4 className="font-semibold text-slate-800">AI Data Quality Check</h4>
+                        <p className="text-sm text-slate-600 mt-1 mb-4">Find potential formatting errors, inconsistencies, or typos in your data.</p>
+                        <button
+                            onClick={onRunAiAnalysis}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-colors"
+                        >
+                            <SparklesIcon className="w-5 h-5" />
+                            <span>Run AI Check</span>
+                        </button>
                     </div>
                 );
             case 'error':
@@ -139,6 +185,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
                          <section>
                             <h3 className="text-lg font-semibold text-slate-700 mb-3 border-b pb-2">Data Health</h3>
                             <div className="space-y-4 text-sm">
+                                {renderDataValidationSection()}
                                 {renderAiAnalysisSection()}
                                 {(removedDuplicates.length > 0 || crossCategoryDuplicates.length > 0) && (
                                     <details className="group bg-slate-50 border border-slate-200 rounded-lg overflow-hidden transition-all duration-300">

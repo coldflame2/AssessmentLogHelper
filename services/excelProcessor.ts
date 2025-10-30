@@ -27,37 +27,66 @@ const findMetadata = (data: (string | number)[][]): { isbn: string | null, title
 };
 
 
-const findHeaders = (data: (string | number)[][]): { headerRowIndex: number; sourceColIndex: number; ackColIndex: number, pageColIndex: number } => {
+const findHeaders = (data: (string | number)[][]): {
+  headerRowIndex: number;
+  sourceColIndex: number;
+  ackColIndex: number;
+  pageColIndex: number;
+  usageColIndex: number;
+  feeColIndex: number;
+} => {
   let headerRowIndex = -1;
   let sourceColIndex = -1;
   let ackColIndex = -1;
   let pageColIndex = -1;
+  let usageColIndex = -1;
+  let feeColIndex = -1;
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     if (!Array.isArray(row)) continue;
 
-    const lowerCaseRow = row.map(cell => typeof cell === 'string' ? cell.toLowerCase().trim() : '');
+    // Normalize headers: lowercase, trim, and remove parenthesized suffixes like (£)
+    const lowerCaseRow = row.map(cell =>
+      typeof cell === 'string' ? cell.toLowerCase().trim().replace(/\s*\(.*\)\s*$/, '') : ''
+    );
     
     const tempSourceIndex = lowerCaseRow.indexOf('source');
     const tempAckIndex = lowerCaseRow.indexOf('acknowledgement');
     const tempPageIndex = lowerCaseRow.indexOf('page number');
+    const tempUsageIndex = lowerCaseRow.indexOf('usage classification');
+    const tempFeeIndex = lowerCaseRow.indexOf('licence fee');
 
-    if (tempSourceIndex !== -1 && tempAckIndex !== -1 && tempPageIndex !== -1) {
+    // Check if enough core columns are found to consider it a header row
+    if (tempSourceIndex !== -1 && tempAckIndex !== -1) {
       headerRowIndex = i;
       sourceColIndex = tempSourceIndex;
       ackColIndex = tempAckIndex;
       pageColIndex = tempPageIndex;
-      break;
+      usageColIndex = tempUsageIndex;
+      feeColIndex = tempFeeIndex;
+      break; 
     }
   }
 
-  if (headerRowIndex === -1) {
-    throw new Error('Could not find all required columns: "source", "acknowledgement", and "page number". Please check the Excel file for these headers.');
+  if (headerRowIndex === -1 || sourceColIndex === -1 || ackColIndex === -1 || pageColIndex === -1 || usageColIndex === -1 || feeColIndex === -1) {
+    const missingCols = [];
+    if (sourceColIndex === -1) missingCols.push('"source"');
+    if (ackColIndex === -1) missingCols.push('"acknowledgement"');
+    if (pageColIndex === -1) missingCols.push('"page number"');
+    if (usageColIndex === -1) missingCols.push('"usage classification"');
+    if (feeColIndex === -1) missingCols.push('"licence fee"');
+
+    if (missingCols.length > 0) {
+        throw new Error(`Could not find all required columns. Missing: ${missingCols.join(', ')}. Please check the Excel file headers.`);
+    }
+    // Fallback error
+    throw new Error('Could not find all required columns. Please check the Excel file.');
   }
 
-  return { headerRowIndex, sourceColIndex, ackColIndex, pageColIndex };
+  return { headerRowIndex, sourceColIndex, ackColIndex, pageColIndex, usageColIndex, feeColIndex };
 };
+
 
 export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
   return new Promise((resolve, reject) => {
@@ -87,7 +116,7 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
             if (jsonData.length === 0) continue;
 
             try {
-                const { headerRowIndex, sourceColIndex, ackColIndex, pageColIndex } = findHeaders(jsonData);
+                const { headerRowIndex, sourceColIndex, ackColIndex, pageColIndex, usageColIndex, feeColIndex } = findHeaders(jsonData);
                 const metadata = findMetadata(jsonData);
                 
                 const sheetRecords: AcknowledgementRecord[] = [];
@@ -97,13 +126,18 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
                     
                     const source = row[sourceColIndex];
                     const acknowledgement = row[ackColIndex];
-                    const pageNumber = row[pageColIndex];
 
                     if (source && acknowledgement) {
+                        const pageNumber = row[pageColIndex];
+                        const usageClassification = row[usageColIndex];
+                        const licenseFee = row[feeColIndex];
+
                         sheetRecords.push({
                             source: String(source).trim(),
                             acknowledgement: String(acknowledgement).trim(),
                             pageNumber: pageNumber !== undefined && pageNumber !== null ? String(pageNumber).trim() : '',
+                            usageClassification: usageClassification !== undefined && usageClassification !== null ? String(usageClassification).trim() : '',
+                            licenseFee: licenseFee !== undefined && licenseFee !== null ? String(licenseFee).trim() : '',
                         });
                     }
                 }
@@ -121,7 +155,7 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
         }
         
         if (processedData === null) {
-            return reject(new Error('Could not find "source", "acknowledgement", and "page number" columns in any sheet. Please check your Excel file.'));
+            return reject(new Error('Could not find required columns in any sheet. Please check your Excel file.'));
         }
 
         if (processedData.records.length === 0) {

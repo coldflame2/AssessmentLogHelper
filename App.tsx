@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { processExcelFile } from './services/excelProcessor';
 import { analyzeAcknowledgements, describeImage } from './services/geminiService';
 import { processContactSheet } from './services/contactSheetProcessor';
+import { validateData } from './services/dataValidator';
 import { FileUpload } from './components/FileUpload';
 import { ResultsTable } from './components/ResultsTable';
 import { ErrorIcon } from './components/icons/ErrorIcon';
@@ -112,6 +113,9 @@ const App: React.FC = () => {
   const [removedDuplicates, setRemovedDuplicates] = useState<AcknowledgementRecord[]>([]);
   const [crossCategoryDuplicates, setCrossCategoryDuplicates] = useState<AcknowledgementRecord[]>([]);
   
+  // State for Data Validation
+  const [dataValidationFlags, setDataValidationFlags] = useState<AIFlaggedRecord[]>([]);
+
   // State for AI Analysis
   const [aiFlags, setAiFlags] = useState<AIFlaggedRecord[]>([]);
   const [aiAnalysisStatus, setAiAnalysisStatus] = useState<AIAnalysisStatus>('idle');
@@ -141,6 +145,7 @@ const App: React.FC = () => {
     setNonCoverData([]);
     setRemovedDuplicates([]);
     setCrossCategoryDuplicates([]);
+    setDataValidationFlags([]);
     setAiFlags([]);
     setAiAnalysisStatus('idle');
     setIsbn(null);
@@ -158,10 +163,11 @@ const App: React.FC = () => {
     setIsInfoPanelOpen(true);
   };
 
-  const handleProcessFile = useCallback(async (file: File, skipAiCheck: boolean) => {
+  const handleProcessFile = useCallback(async (file: File) => {
     setStatus('processing');
     setFileName(file.name);
     setError(null);
+    setDataValidationFlags([]);
     setAiFlags([]);
     setAiAnalysisStatus('idle');
     setIsbn(null);
@@ -171,6 +177,10 @@ const App: React.FC = () => {
 
     try {
       const { records: allRecords, isbn: fileIsbn, title: fileTitle } = await processExcelFile(file);
+      
+      const validationFlags = validateData(allRecords);
+      setDataValidationFlags(validationFlags);
+
       setOriginalRecords(allRecords);
       setIsbn(fileIsbn);
       setTitle(fileTitle);
@@ -193,26 +203,8 @@ const App: React.FC = () => {
       // Show results to user immediately
       setStatus('success');
       
-      if (skipAiCheck) {
-        setAiAnalysisStatus('skipped');
-        return;
-      }
-
-      // Start AI analysis in the background
-      const runAiAnalysis = async () => {
-        setAiAnalysisStatus('running');
-        try {
-            const allUniqueData = [...processedCoverData, ...processedNonCoverData];
-            const flaggedData = await analyzeAcknowledgements(allUniqueData);
-            setAiFlags(flaggedData);
-            setAiAnalysisStatus('completed');
-        } catch (aiError) {
-            console.error("AI analysis background task failed:", aiError);
-            setAiAnalysisStatus('error');
-        }
-      };
-      
-      runAiAnalysis();
+      // Set AI analysis to skipped by default, user can trigger it manually.
+      setAiAnalysisStatus('skipped');
 
     } catch (err) {
       if (err instanceof Error) {
@@ -223,6 +215,23 @@ const App: React.FC = () => {
       setStatus('error');
     }
   }, []);
+
+  const handleRunAiAnalysis = async () => {
+    setAiAnalysisStatus('running');
+    try {
+        const allUniqueData = [...coverData, ...nonCoverData];
+        if (allUniqueData.length === 0) {
+            setAiAnalysisStatus('completed'); // Nothing to analyze
+            return;
+        }
+        const flaggedData = await analyzeAcknowledgements(allUniqueData);
+        setAiFlags(flaggedData);
+        setAiAnalysisStatus('completed');
+    } catch (aiError) {
+        console.error("AI analysis failed:", aiError);
+        setAiAnalysisStatus('error');
+    }
+  };
 
   const findPageNumberFromText = (text: string): string => {
     const numbers = text.match(/\d+/g);
@@ -723,10 +732,12 @@ const App: React.FC = () => {
               totalSources={totalSources}
               coverCreditsCount={coverData.length}
               mainCreditsCount={nonCoverData.length}
+              dataValidationFlags={dataValidationFlags}
               aiAnalysisStatus={aiAnalysisStatus}
               aiFlags={aiFlags}
               removedDuplicates={removedDuplicates}
               crossCategoryDuplicates={crossCategoryDuplicates}
+              onRunAiAnalysis={handleRunAiAnalysis}
             />
           </div>
         );

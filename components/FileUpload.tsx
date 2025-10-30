@@ -1,20 +1,18 @@
-
 import React, { useState, useCallback } from 'react';
 import { UploadIcon } from './icons/UploadIcon';
 
 interface FileUploadProps {
-  onFileSelect: (file: File, skipAiCheck: boolean) => void;
+  onFileSelect: (file: File) => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [skipAiCheck, setSkipAiCheck] = useState(true);
 
   const handleFileChange = (files: FileList | null) => {
     if (files && files.length > 0) {
       const file = files[0];
       if (file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || file.type === 'application/vnd.ms-excel') {
-        onFileSelect(file, skipAiCheck);
+        onFileSelect(file);
       } else {
         alert('Please upload a valid Excel file (.xlsx or .xls).');
       }
@@ -43,7 +41,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
     e.stopPropagation();
     setIsDragging(false);
     handleFileChange(e.dataTransfer.files);
-  }, [onFileSelect, skipAiCheck]);
+  }, [onFileSelect]);
 
 
   return (
@@ -73,24 +71,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
           </p>
           <p className="text-xs text-slate-400 mt-4">Supports .xlsx and .xls files</p>
         </div>
-      </div>
-      <div className="mt-4 flex items-center justify-center">
-        <label htmlFor="skip-ai-check" className="flex items-center cursor-pointer">
-          <div className="relative">
-            <input 
-              id="skip-ai-check" 
-              type="checkbox" 
-              className="sr-only" 
-              checked={skipAiCheck} 
-              onChange={() => setSkipAiCheck(!skipAiCheck)} 
-            />
-            <div className={`block w-14 h-8 rounded-full transition-colors ${skipAiCheck ? 'bg-slate-400' : 'bg-blue-600'}`}></div>
-            <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${skipAiCheck ? 'transform translate-x-0' : 'transform translate-x-6'}`}></div>
-          </div>
-          <div className="ml-3 text-slate-600 font-medium text-sm">
-            Enable AI Data Quality Check
-          </div>
-        </label>
       </div>
     </>
   );
