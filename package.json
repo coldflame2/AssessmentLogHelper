@@ -16,8 +16,14 @@
     "@google/genai": "^1.21.0",
     "pdfjs-dist": "4.4.168",
     "mammoth": "1.8.0",
-    "@univerjs/preset-sheets-core": "^0.10.13",
-    "@univerjs/presets": "^0.10.13"
+    "@univerjs/preset-sheets-core": "^0.10.14",
+    "@univerjs/presets": "^0.10.14",
+    "@univerjs/core": "^0.10.14",
+    "@univerjs/design": "^0.10.14",
+    "@univerjs/engine-render": "^0.10.14",
+    "@univerjs/sheets": "^0.10.14",
+    "@univerjs/ui": "^0.10.14",
+    "rxjs": "7.8.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

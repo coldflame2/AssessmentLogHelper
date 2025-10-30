@@ -10,6 +10,7 @@ import { ActionsHeader } from './components/ActionsHeader';
 import { DropdownMenu } from './components/DropdownMenu';
 import { InfoPanel } from './components/InfoPanel';
 import { NavigationRail } from './components/NavigationRail';
+import { EditableLogModal } from './components/EditableLogModal';
 import type { AcknowledgementRecord, AppStatus, AIFlaggedRecord, ContactSheetStatus, ImageAnalysisResult, ExtractedImage, AIAnalysisStatus } from './types';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
 import saveAs from "file-saver";
@@ -115,6 +116,8 @@ const App: React.FC = () => {
   
   // State for Data Validation
   const [dataValidationFlags, setDataValidationFlags] = useState<AIFlaggedRecord[]>([]);
+  const [highlightedRowIndices, setHighlightedRowIndices] = useState<number[]>([]);
+
 
   // State for AI Analysis
   const [aiFlags, setAiFlags] = useState<AIFlaggedRecord[]>([]);
@@ -134,8 +137,9 @@ const App: React.FC = () => {
   const [isDownloadingSorted, setIsDownloadingSorted] = useState(false);
 
   // UI State
-  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
-
+  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(true);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [rawData, setRawData] = useState<(string | number)[][]>([]);
 
   const handleReset = () => {
     setStatus('idle');
@@ -146,12 +150,14 @@ const App: React.FC = () => {
     setRemovedDuplicates([]);
     setCrossCategoryDuplicates([]);
     setDataValidationFlags([]);
+    setHighlightedRowIndices([]);
     setAiFlags([]);
     setAiAnalysisStatus('idle');
     setIsbn(null);
     setTitle(null);
     setOriginalRecordCount(0);
     setOriginalRecords([]);
+    setRawData([]);
     setContactSheetStatus('idle');
     setImageAnalysisResults([]);
     setContactSheetError(null);
@@ -161,6 +167,7 @@ const App: React.FC = () => {
     setIsMerging(false);
     setIsDownloadingSorted(false);
     setIsInfoPanelOpen(true);
+    setIsEditModalOpen(false);
   };
 
   const handleProcessFile = useCallback(async (file: File) => {
@@ -168,20 +175,25 @@ const App: React.FC = () => {
     setFileName(file.name);
     setError(null);
     setDataValidationFlags([]);
+    setHighlightedRowIndices([]);
     setAiFlags([]);
     setAiAnalysisStatus('idle');
     setIsbn(null);
     setTitle(null);
     setOriginalRecordCount(0);
     setOriginalRecords([]);
+    setRawData([]);
 
     try {
-      const { records: allRecords, isbn: fileIsbn, title: fileTitle } = await processExcelFile(file);
+      const { records: allRecords, isbn: fileIsbn, title: fileTitle, rawData: allRawData } = await processExcelFile(file);
       
       const validationFlags = validateData(allRecords);
       setDataValidationFlags(validationFlags);
+      setHighlightedRowIndices(validationFlags.map(flag => flag.originalRowIndex));
+
 
       setOriginalRecords(allRecords);
+      setRawData(allRawData);
       setIsbn(fileIsbn);
       setTitle(fileTitle);
       setOriginalRecordCount(allRecords.length);
@@ -672,11 +684,15 @@ const App: React.FC = () => {
   };
 
   const handleEditOriginal = () => {
-    // This is a placeholder for the editing functionality.
-    console.log("Edit Original Log clicked. Feature to be implemented.");
+    if (rawData.length > 0) {
+      setIsEditModalOpen(true);
+    }
   };
 
   const totalSources = new Set([...coverData.map(d => d.source), ...nonCoverData.map(d => d.source)]).size;
+
+  const coverValidationFlags = new Set(dataValidationFlags.filter(f => isCoverPage(f.pageNumber)).map(f => f.originalRowIndex));
+  const nonCoverValidationFlags = new Set(dataValidationFlags.filter(f => !isCoverPage(f.pageNumber)).map(f => f.originalRowIndex));
 
   const renderContent = () => {
     switch (status) {
@@ -697,49 +713,61 @@ const App: React.FC = () => {
         );
       case 'success':
         return (
-          <div className="flex gap-6">
-            <div className="flex-grow bg-white rounded-xl shadow-lg p-2 sm:p-3 flex gap-6 transition-all duration-300">
-              <NavigationRail />
-              <div className="flex-grow min-w-0">
-                <div className="flex justify-end items-center mb-2 px-2">
-                    <button
-                        onClick={handleEditOriginal}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-white text-slate-600 font-semibold rounded-lg border border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors text-sm shadow-sm"
-                    >
-                        <EditIcon className="w-4 h-4" />
-                        <span>Edit Original Log</span>
-                    </button>
+          <>
+            <div className="flex gap-6">
+              <div className="flex-grow bg-white rounded-xl shadow-lg p-2 sm:p-3 flex gap-6 transition-all duration-300">
+                <NavigationRail />
+                <div className="flex-grow min-w-0">
+                  <div className="flex justify-end items-center mb-2 px-2">
+                      <button
+                          onClick={handleEditOriginal}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-white text-slate-600 font-semibold rounded-lg border border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors text-sm shadow-sm"
+                      >
+                          <EditIcon className="w-4 h-4" />
+                          <span>Edit Original Log</span>
+                      </button>
+                  </div>
+                  <ResultsTable 
+                    coverData={coverData}
+                    nonCoverData={nonCoverData}
+                    coverValidationFlags={coverValidationFlags}
+                    nonCoverValidationFlags={nonCoverValidationFlags}
+                    onProcessContactSheet={handleProcessContactSheet}
+                    onProcessDirectImages={handleProcessDirectImages}
+                    onResetContactSheet={handleContactSheetReset}
+                    contactSheetStatus={contactSheetStatus}
+                    imageAnalysisResults={imageAnalysisResults}
+                    contactSheetError={contactSheetError}
+                    processingProgress={processingProgress}
+                    onRetryFailedImages={handleRetryFailedImages}
+                  />
                 </div>
-                <ResultsTable 
-                  coverData={coverData}
-                  nonCoverData={nonCoverData}
-                  onProcessContactSheet={handleProcessContactSheet}
-                  onProcessDirectImages={handleProcessDirectImages}
-                  onResetContactSheet={handleContactSheetReset}
-                  contactSheetStatus={contactSheetStatus}
-                  imageAnalysisResults={imageAnalysisResults}
-                  contactSheetError={contactSheetError}
-                  processingProgress={processingProgress}
-                  onRetryFailedImages={handleRetryFailedImages}
-                />
               </div>
+              <InfoPanel 
+                isOpen={isInfoPanelOpen}
+                onToggle={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
+                fileName={fileName}
+                originalRecordCount={originalRecordCount}
+                totalSources={totalSources}
+                coverCreditsCount={coverData.length}
+                mainCreditsCount={nonCoverData.length}
+                dataValidationFlags={dataValidationFlags}
+                aiAnalysisStatus={aiAnalysisStatus}
+                aiFlags={aiFlags}
+                removedDuplicates={removedDuplicates}
+                crossCategoryDuplicates={crossCategoryDuplicates}
+                onRunAiAnalysis={handleRunAiAnalysis}
+              />
             </div>
-            <InfoPanel 
-              isOpen={isInfoPanelOpen}
-              onToggle={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
-              fileName={fileName}
-              originalRecordCount={originalRecordCount}
-              totalSources={totalSources}
-              coverCreditsCount={coverData.length}
-              mainCreditsCount={nonCoverData.length}
-              dataValidationFlags={dataValidationFlags}
-              aiAnalysisStatus={aiAnalysisStatus}
-              aiFlags={aiFlags}
-              removedDuplicates={removedDuplicates}
-              crossCategoryDuplicates={crossCategoryDuplicates}
-              onRunAiAnalysis={handleRunAiAnalysis}
-            />
-          </div>
+            {isEditModalOpen && (
+              <EditableLogModal
+                  isOpen={isEditModalOpen}
+                  onClose={() => setIsEditModalOpen(false)}
+                  data={rawData}
+                  highlightedRowIndices={highlightedRowIndices}
+              />
+            )}
+          </>
         );
       case 'error':
         return (

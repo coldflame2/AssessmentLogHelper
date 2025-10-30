@@ -7,6 +7,8 @@ import { ChevronDownIcon } from './icons/ChevronDownIcon';
 interface ResultsTableProps {
   coverData: AcknowledgementRecord[];
   nonCoverData: AcknowledgementRecord[];
+  coverValidationFlags: Set<number>;
+  nonCoverValidationFlags: Set<number>;
   onProcessContactSheet: (file: File) => void;
   onProcessDirectImages: (files: File[]) => void;
   onResetContactSheet: () => void;
@@ -17,25 +19,29 @@ interface ResultsTableProps {
   processingProgress: { current: number; total: number };
 }
 
-const renderTableRows = (data: AcknowledgementRecord[]) => (
+const renderTableRows = (data: AcknowledgementRecord[], flaggedIndices: Set<number>) => (
   <>
-    {data.map((item, index) => (
-      <tr key={index} className="odd:bg-white even:bg-slate-50 hover:bg-blue-50 transition-colors">
-        <td className="px-1 py-1 whitespace-nowrap text-sm font-medium text-slate-800">{item.source}</td>
-        <td className="px-1 py-1 whitespace-normal text-sm text-slate-600">{item.acknowledgement}</td>
-        <td className="px-1 py-1 whitespace-nowrap text-sm text-slate-600 text-center">{item.pageNumber}</td>
-      </tr>
-    ))}
+    {data.map((item) => {
+        const isFlagged = flaggedIndices.has(item.originalRowIndex);
+        return (
+            <tr key={item.originalRowIndex} className={`transition-colors ${isFlagged ? 'bg-red-100 hover:bg-red-200' : 'odd:bg-white even:bg-slate-50 hover:bg-blue-50'}`}>
+                <td className="px-1 py-1 whitespace-nowrap text-sm font-medium text-slate-800">{item.source}</td>
+                <td className="px-1 py-1 whitespace-normal text-sm text-slate-600">{item.acknowledgement}</td>
+                <td className="px-1 py-1 whitespace-nowrap text-sm text-slate-600 text-center">{item.pageNumber}</td>
+            </tr>
+        );
+    })}
   </>
 );
 
 export const ResultsTable: React.FC<ResultsTableProps> = (props) => {
     const { 
         coverData, nonCoverData, 
+        coverValidationFlags, nonCoverValidationFlags,
     } = props;
 
-    const [isCoverExpanded, setIsCoverExpanded] = useState(false);
-    const [isMainExpanded, setIsMainExpanded] = useState(false);
+    const [isCoverExpanded, setIsCoverExpanded] = useState(true);
+    const [isMainExpanded, setIsMainExpanded] = useState(true);
     
   return (
     <div className="animate-fade-in flex flex-col gap-1">
@@ -64,11 +70,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = (props) => {
                                         className="inline-flex items-center gap-3 px-4 py-2 bg-slate-200 text-black text-base rounded-md hover:bg-slate-300 transition-colors shadow-sm"
                                     >
                                         <span>Cover Credits</span>
-                                        <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${!isCoverExpanded ? 'rotate-0' : 'rotate-180'}`} />
+                                        <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${isCoverExpanded ? 'rotate-180' : 'rotate-0'}`} />
                                     </button>
                                 </td>
                             </tr>
-                            {isCoverExpanded && renderTableRows(coverData)}
+                            {isCoverExpanded && renderTableRows(coverData, coverValidationFlags)}
                         </tbody>
                     )}
                     {nonCoverData.length > 0 && (
@@ -80,11 +86,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = (props) => {
                                         className="inline-flex items-center gap-3 px-4 py-2 bg-slate-200 text-black text-base rounded-md hover:bg-slate-300 transition-colors shadow-sm"
                                     >
                                         <span>Main Content Credits</span>
-                                        <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${!isMainExpanded ? 'rotate-0' : 'rotate-180'}`} />
+                                        <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${isMainExpanded ? 'rotate-180' : 'rotate-0'}`} />
                                     </button>
                                 </td>
                             </tr>
-                            {isMainExpanded && renderTableRows(nonCoverData)}
+                            {isMainExpanded && renderTableRows(nonCoverData, nonCoverValidationFlags)}
                         </tbody>
                     )}
                 </table>

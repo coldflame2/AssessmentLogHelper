@@ -1,3 +1,4 @@
+import type { UniverSheet } from '@univerjs/core';
 
 export interface AcknowledgementRecord {
   source: string;
@@ -5,6 +6,7 @@ export interface AcknowledgementRecord {
   pageNumber: string;
   usageClassification: string;
   licenseFee: string;
+  originalRowIndex: number;
 }
 
 export type AppStatus = 'idle' | 'processing' | 'success' | 'error';
@@ -18,6 +20,8 @@ export interface ProcessedExcelData {
   records: AcknowledgementRecord[];
   isbn: string | null;
   title: string | null;
+  rawData: (string | number)[][];
+  headerRowIndex: number;
 }
 
 // Types for Image Analysis Feature

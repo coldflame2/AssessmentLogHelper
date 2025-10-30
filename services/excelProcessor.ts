@@ -138,6 +138,7 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
                             pageNumber: pageNumber !== undefined && pageNumber !== null ? String(pageNumber).trim() : '',
                             usageClassification: usageClassification !== undefined && usageClassification !== null ? String(usageClassification).trim() : '',
                             licenseFee: licenseFee !== undefined && licenseFee !== null ? String(licenseFee).trim() : '',
+                            originalRowIndex: i,
                         });
                     }
                 }
@@ -146,6 +147,8 @@ export const processExcelFile = (file: File): Promise<ProcessedExcelData> => {
                     records: sheetRecords,
                     isbn: metadata.isbn,
                     title: metadata.title,
+                    rawData: jsonData,
+                    headerRowIndex: headerRowIndex,
                 };
                 break; // Found and processed the correct sheet, exit loop
             } catch (error) {

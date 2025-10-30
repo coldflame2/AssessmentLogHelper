@@ -17,15 +17,14 @@ export const validateData = (records: AcknowledgementRecord[]): AIFlaggedRecord[
     records.forEach(record => {
         const normalizedUsage = normalizeText(record.usageClassification);
 
-        // Rule 1: "No License" in Usage Classification requires Licence Fee to be 0.
+        // Rule 1: "No License" in Usage Classification requires Licence Fee to be EMPTY.
         if (normalizedUsage.includes('no license')) {
             const feeValue = record.licenseFee.trim();
-            // A fee of '0' or '0.00' is valid. An empty string is not.
-            const fee = parseFloat(feeValue);
-            if (feeValue === '' || isNaN(fee) || fee !== 0) {
+            // A fee must not be present. Any value, including '0' or '0.00' is invalid.
+            if (feeValue !== '') {
                 flags.push({
                     ...record,
-                    reason: `Usage is "${record.usageClassification}" but Licence Fee is "${feeValue || 'empty'}", not 0.`
+                    reason: `Usage is "${record.usageClassification}" but Licence Fee is "${feeValue}", not empty.`
                 });
             }
         } 
