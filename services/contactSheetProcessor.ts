@@ -1,11 +1,10 @@
 import * as mammoth from 'mammoth';
-import { getDocument, GlobalWorkerOptions, OPS } from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist';
 import type { ExtractedImage } from '../types';
 
-// Set worker source for pdf.js
-// By using a named import, we ensure GlobalWorkerOptions is correctly accessed.
+// Per esm.sh and pdf.js documentation for ES modules, set the worker source on the library's namespace.
 // @ts-ignore
-GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.4.168/build/pdf.worker.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.4.168/build/pdf.worker.mjs';
 
 
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
@@ -54,7 +53,7 @@ const processDocx = async (file: File): Promise<ExtractedImage[]> => {
 
 const processPdf = async (file: File): Promise<ExtractedImage[]> => {
     const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = getDocument({ data: new Uint8Array(arrayBuffer) });
+    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
     const pdf = await loadingTask.promise;
     const extracted: ExtractedImage[] = [];
 
@@ -68,7 +67,7 @@ const processPdf = async (file: File): Promise<ExtractedImage[]> => {
                 const operatorList = await page.getOperatorList();
 
                 for (let j = 0; j < operatorList.fnArray.length; j++) {
-                    if (operatorList.fnArray[j] === OPS.paintImageXObject) {
+                    if (operatorList.fnArray[j] === pdfjsLib.OPS.paintImageXObject) {
                         const imgKey = operatorList.argsArray[j][0];
                         try {
                             // Fix: In modern pdf.js versions (v3+), `page.getResources()` is removed.
